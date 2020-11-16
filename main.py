@@ -10,6 +10,8 @@ import difflib
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression
+from nltk.tokenize import word_tokenize
+import itertools
 
 def baseline(instances, keys):
     cnt = 0
@@ -17,22 +19,12 @@ def baseline(instances, keys):
         word = instances[entry].lemma
         m = wn.synsets(word)
         base = wn.synsets(word, instances[entry].pos)[0].lemmas()
-        print(wn.synsets(word))
+        # print(wn.synsets(word))
 
-        sense2count = {}  # dictionary of the form {synset_name: count, ...}
-        for ss in m:
-            freq = 0
-            for lemma in ss.lemmas():
-                freq += lemma.count()
-            sense2count[ss.name()] = freq
-            print(freq)
-        # print(word," -> " ,m, " -> " ,n,  " -> ",keys[entry])
         list = []
         for b in base:
             list.append((b.key()))
-        # print(wn.synsets(word)[0].lemmas())
-        # print(list)
-        # print(keys[entry])
+
         for key in keys[entry]:
             # print (keys[entry],"---",key, "---",list)
             if key in list:
@@ -52,10 +44,10 @@ def NLTKlesk(instances, keys):
 
         for l in result:
             list.append(l.key())
-        print(result)
-        print(lesk(instances[entry].context, instances[entry].lemma))
-        print(list)
-        print(keys[entry])
+        # print(result)
+        # print(lesk(instances[entry].context, instances[entry].lemma))
+        # print(list)
+        # print(keys[entry])
         for key in keys[entry]:
             if key in list:
                 sum += 1
@@ -145,40 +137,61 @@ def bootstrapping():
             cnt = cnt + 1;
     print("Accuracy on Test",cnt / len(test_preds))
 
-def mixedLesk():
 
-    modi_dev_synsets = {}
-    for i in dev_instances.values():
-        id = i.id
+def get_glossary(sense):
 
-        base_dev_lemmas = wn.lemmas(i.lemma)
-        modi_dev_synsets[id] = base_dev_lemmas[0].key()
+    definition = wn.synset(sense).definition()
 
-        base_dev_prob = [100, 75, 60, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0, 0, 0, 0, 0, 0]
-        lesk_dev_lemmas = (lesk(i.context, i.lemma)).lemmas()[0]
-        lesk_dev_prob = 10
-        max_probability = 0
-        range1 = min(len(base_dev_lemmas), 10)
+    examples = wn.synset(sense).examples()
 
-        for x in range(0, range1):
-            if (base_dev_prob[x] > max_probability):
-                max_probability = base_dev_prob[x]
-            if (base_dev_lemmas[x].key() == lesk_dev_lemmas.key()):
-                current_prob = base_dev_prob[x] + lesk_dev_prob + len(i.lemma)
-                if (current_prob > max_probability):
-                    max_probability = current_prob
-                    # print(lesk_dev_lemmas.key())
-                    modi_dev_synsets[id] = lesk_dev_lemmas.key()
+    glossary = []
 
-    # Accuracy of Second Modified Algorithm on Development Set
-    modi_match_dev = 0;
-    for i in dev_key:
-        if modi_dev_synsets[i] in dev_key[i]:
-            modi_match_dev += 1
+    glossary.append(word_tokenize(definition))
+    for example in examples:
+        glossary.append(word_tokenize(example))
 
-    modi_dev_accuracy = modi_match_dev / (float(len(dev_key.values())))
+    merged = list(itertools.chain(*glossary))
+    return merged
 
-    print("Accuracy of Second Modified Algorithm on Development set: ", modi_dev_accuracy * 100)
+
+from collections import Counter
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+
+
+
+def fourthWSD(instances, keys):
+    cnt = 0
+    for entry in instances:
+        word = instances[entry].lemma
+        senses = wn.synsets(word)
+        best_sense = wn.synsets(word, instances[entry].pos)[0].lemmas()
+        # base = wn.synsets(word, instances[entry].pos)[0].lemmas()
+        best_score = 0
+
+        for i in range(0, len(senses)):
+            signature = get_glossary(senses[i].name())
+            # Jaccard Similarity
+            overlap_count = len(set(signature).intersection(set(instances[entry].context)))
+  
+
+
+            if overlap_count > best_score:
+                best_score = overlap_count
+                best_sense = senses[i].lemmas()
+        list = []
+        # print(best_sense)
+        for b in best_sense:
+            list.append((b.key()))
+
+        for key in keys[entry]:
+            # print (keys[entry],"---",key, "---",list)
+            if key in list:
+                cnt += 1
+    accuracy = float(cnt) / len(instances)
+    print("Mixed Lesk: ", accuracy * 100)
 
 
 
@@ -197,13 +210,9 @@ if __name__ == '__main__':
     #     print(dev_instances[entry].context)
     #     print(dev_instances[entry].lemma)
     #     print(dev_key[entry])
-    # baseline(dev_instances, dev_key)
-    # NLTKlesk(dev_instances, dev_key)
-
-    mixedLesk()
-
-    bootstrapping()
-
-
+    baseline(test_instances, test_key)
+    NLTKlesk(test_instances, test_key)
+    fourthWSD(test_instances, test_key)
+    # bootstrapping()
 
 
