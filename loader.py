@@ -9,11 +9,12 @@ from nltk.wsd import lesk
 from nltk.corpus import wordnet as wn
 
 class WSDInstance:
-    def __init__(self, my_id, lemma, context, index):
+    def __init__(self, my_id, lemma, context, index, pos=None):
         self.id = my_id         # id of the WSD instance
         self.lemma = lemma      # lemma of the word whose sense is to be resolved
         self.context = context  # lemma of all the words in the sentential context
         self.index = index      # index of lemma within the context
+        self.pos = pos
     def __str__(self):
         '''
         For printing purposes.
@@ -43,6 +44,7 @@ def load_instances(f):
                     if el.tag == 'instance':
                         my_id = el.attrib['id']
                         lemma = to_ascii(el.attrib['lemma'])
+                        pos = el.attrib['pos'][0].lower()
                         dev_instances[my_id] = WSDInstance(my_id, lemma, context, i)
                         # print(dev_instances.values())
 
@@ -56,6 +58,7 @@ def load_instances(f):
                     if el.tag == 'instance':
                         my_id = el.attrib['id']
                         lemma = to_ascii(el.attrib['lemma'])
+                        pos = el.attrib['pos'][0].lower()
                         test_instances[my_id] = WSDInstance(my_id, lemma, context, i)
                         # print(my_id)
 
