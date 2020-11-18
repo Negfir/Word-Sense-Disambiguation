@@ -20,18 +20,12 @@ def preprocess(instances):
         stops = set(stopwords.words('english'))
         lemmatizer = WordNetLemmatizer()
         for token in instance.context:
-            # token = ''.join([c for c in str(token.decode("utf-8")) if c not in string.punctuation])
-            # token=token.decode("utf-8");
             if (len(token) > 1) and (token not in stops) :
-
                 res.append(token.lower().decode("utf-8").replace('@', ''))
         resLemma = []
         for word in res:
-            # tag = nltk.pos_tag(str(word))
-            # print(tag)
-            # tagged = map(lambda x: (x[0], tagConvert(x[1])), word)
+
             token = lemmatizer.lemmatize(word)
-            # token = lemma_tokens(tagged, lemmatizer)
             token = ''.join([c for c in str(token) if c not in string.punctuation])
             resLemma.append(token)
         instance.context = resLemma
@@ -64,7 +58,6 @@ def baseline(instances, keys):
             list.append((b.key()))
 
         for key in keys[entry]:
-            # print (keys[entry],"---",key, "---",list)
             if key in list:
                 cnt += 1
     print("Baseline accuracy: ", float(cnt) / len(instances) * 100)
@@ -110,11 +103,6 @@ def bootstrapping(dev_instances, test_instances, dev_key, test_key):
             seed_lemmas.append(dev_instances[entry].lemma)
             seed_labels.append(str(dev_key[entry]))
 
-    # for entry in test_instances:
-    #     if (test_instances[entry].lemma=='year' or test_instances[entry].lemma=='country' or test_instances[entry].lemma=='world' or test_instances[entry].lemma=='week' or test_instances[entry].lemma=='friday' or test_instances[entry].lemma=='china' or test_instances[entry].lemma=='one' or test_instances[entry].lemma=='deal' or test_instances[entry].lemma=='impact' or test_instances[entry].lemma=='united_stated'):
-    #         seed_context.append(test_instances[entry].lemma+" "+(' '.join(test_instances[entry].context)))
-    #         seed_lemmas.append(test_instances[entry].lemma)
-    #         seed_labels.append(str(test_instances[entry]))
 
     loop=0
     acc = []
@@ -138,7 +126,7 @@ def bootstrapping(dev_instances, test_instances, dev_key, test_key):
         for i, pred in enumerate(preds):
             if(dev_labels[i] == pred):
                 cnt=cnt+1;
-        print("Iteration",loop,":", cnt/len(preds) *100)
+        print("Bootstrapping iteration",loop,":", cnt/len(preds) *100)
         acc.append(cnt/len(preds) * 100)
 
     import matplotlib.pyplot as plt
@@ -189,7 +177,7 @@ def MixedLesk(instances, keys):
 
         for i in range(0, len(senses)):
             signature = get_examples(senses[i].name())
-            # Jaccard Similarity
+
             overlap_count = len(set(signature).intersection(set(instances[entry].context)))
 
             if overlap_count > best_score:
@@ -201,7 +189,6 @@ def MixedLesk(instances, keys):
             list.append((b.key()))
 
         for key in keys[entry]:
-            # print (keys[entry],"---",key, "---",list)
             if key in list:
                 cnt += 1
     accuracy = float(cnt) / len(instances)
